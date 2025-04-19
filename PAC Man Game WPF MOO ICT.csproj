@@ -1,0 +1,26 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <RootNamespace>PAC_Man_Game_WPF_MOO_ICT</RootNamespace>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UseWPF>true</UseWPF>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Remove="images\orange.jpg" />
+    <None Remove="images\pacman.jpg" />
+    <None Remove="images\pink.jpg" />
+    <None Remove="images\red.jpg" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="images\orange.jpg" />
+    <Resource Include="images\pacman.jpg" />
+    <Resource Include="images\pink.jpg" />
+    <Resource Include="images\red.jpg" />
+  </ItemGroup>
+
+</Project>
