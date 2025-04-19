@@ -5,12 +5,15 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:PAC_Man_Game_WPF_MOO_ICT"
         mc:Ignorable="d"
-        Title="PAC Man Game WPF MOO ICT" Height="600" Width="800">
-    <Canvas Name="MyCanvas" KeyDown="CanvasKeyDown" Focusable="True" Background="Black">
+        Title="PAC Man Game WPF MOO ICT" Height="660" Width="800">
+    <Canvas Name="MyCanvas" KeyDown="CanvasKeyDown" Focusable="True" Background="Black" Margin="0,0,-59,-59">
 
         <Label FontSize="20" Name="txtScore" Foreground="White" Content="Score: 0" />
 
-        <Rectangle Name="pacman" Width="30" Height="30" Fill="Yellow" Canvas.Left="50" Canvas.Top="104" />
+        <Rectangle Name="pacman" Width="30" Height="30" Fill="Yellow" Canvas.Left="417" Canvas.Top="452" HorizontalAlignment="Left" VerticalAlignment="Center" />
+        <Rectangle Name="lifeOne" Width="30" Height="30" Fill="Yellow" Canvas.Left="599" Canvas.Top="583" HorizontalAlignment="Left" VerticalAlignment="Center" />
+        <Rectangle Name="lifeTwo" Width="30" Height="30" Fill="Yellow" Canvas.Left="647" Canvas.Top="583" HorizontalAlignment="Left" VerticalAlignment="Center" />
+        <Rectangle Name="lifeThree" Width="30" Height="30" Fill="Yellow" Canvas.Left="690" Canvas.Top="583" HorizontalAlignment="Left" VerticalAlignment="Center" />
         <Rectangle Name="redGuy" Tag="ghost" Width="30" Height="30" Fill="Red" Canvas.Left="173" Canvas.Top="29" />
         <Rectangle Name="orangeGuy" Tag="ghost" Width="30" Height="30" Fill="Orange" Canvas.Left="651" Canvas.Top="104" />
         <Rectangle Name="pinkGuy" Tag="ghost" Width="30" Height="30" Fill="Pink" Canvas.Left="173" Canvas.Top="404" />
@@ -28,7 +31,8 @@
         <Rectangle Tag="wall" Stroke="Aqua" StrokeThickness="3" Height="109" Width="20" Canvas.Left="231" Canvas.Top="178" />
         <Rectangle Tag="wall" Stroke="Aqua" StrokeThickness="3" Height="82" Width="20" Canvas.Left="142" Canvas.Top="485" />
         <Rectangle Tag="wall" Stroke="Aqua" StrokeThickness="3" Height="82" Width="20" Canvas.Left="700" Canvas.Top="485" />
-        <Rectangle Tag="wall" Stroke="Aqua" StrokeThickness="3" Height="82" Width="76" Canvas.Left="395" Canvas.Top="487" />
+        <Rectangle Tag="wall" Stroke="Aqua" StrokeThickness="3" Height="80" Width="76" Canvas.Left="395" Canvas.Top="487" HorizontalAlignment="Center" VerticalAlignment="Top" />
+        <Rectangle Tag="wall" Stroke="Aqua" StrokeThickness="3" Height="497" Width="20" Canvas.Left="60" Canvas.Top="70" HorizontalAlignment="Center" VerticalAlignment="Top"/>
 
 
         <Rectangle Tag="coin" Height="10" Width="10" Fill="Gold" Canvas.Left="204" Canvas.Top="134" />
@@ -116,6 +120,7 @@
         <Rectangle Tag="coin" Height="10" Width="10" Fill="Gold" Canvas.Left="318" Canvas.Top="510" />
         <Rectangle Tag="coin" Height="10" Width="10" Fill="Gold" Canvas.Left="350" Canvas.Top="544" />
         <Rectangle Tag="coin" Height="10" Width="10" Fill="Gold" Canvas.Left="350" Canvas.Top="510" />
+
 
 
 
