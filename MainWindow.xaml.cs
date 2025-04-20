@@ -27,6 +27,7 @@ namespace PAC_Man_Game_WPF_MOO_ICT
         int currentGhostStep; // current movement limit for the ghosts
         int score = 0; // score keeping integer
         private Random rand = new Random();
+        int tickCounter; // Server para saber quantas vezes a tela atualizou ( noção de tempo )
         private Dictionary<Rectangle, string> ghostDirections = new Dictionary<Rectangle, string>();
 
         public MainWindow()
@@ -120,6 +121,7 @@ namespace PAC_Man_Game_WPF_MOO_ICT
         }
         private void GameLoop(object sender, EventArgs e)
         {
+            tickCounter++;
             // this is the game loop event, this event will control all of the movements, outcome, collision and score for the game
             txtScore.Content = "Score: " + score; // show the scoreo to the txtscore label. 
             // start moving the character in the movement directions
@@ -236,23 +238,27 @@ namespace PAC_Man_Game_WPF_MOO_ICT
                 // if any rectangle has the tag ghost inside of it
                 if ((string)x.Tag == "ghost")
                 {
-                    MoveRandomGhost((Rectangle)x);
+                    //MoveRandomGhost((Rectangle)x);
                     // check if pac man collides with the ghost 
                     if (pacmanHitBox.IntersectsWith(hitBox))
                     {
                         // Lógica para renascer o pacman quando tomar dano
                         DeathLogic();
                     }
-
                     // if there is a rectangle called orange guy in the game
                     if (x.Name.ToString() == "orangeGuy")
                     {
                         // move that rectangle to towards the left of the screen
                         Canvas.SetLeft(x, Canvas.GetLeft(x) - ghostSpeed);
                     }
-                    else
+                    else if (x.Name.ToString() == "redGuy")
                     {
-                        // other ones can move towards the right of the screen
+                        // move that rectangle to towards the left of the screen
+                        Canvas.SetLeft(x, Canvas.GetLeft(x) + ghostSpeed);
+                    }
+                    else if (x.Name.ToString() == "pinkGuy")
+                    {
+                        // move that rectangle to towards the left of the screen
                         Canvas.SetLeft(x, Canvas.GetLeft(x) + ghostSpeed);
                     }
 
@@ -268,6 +274,11 @@ namespace PAC_Man_Game_WPF_MOO_ICT
                         ghostSpeed = -ghostSpeed;
                     }
                 }
+                if (tickCounter == 300) 
+                {
+                    // Fazer nascer uma cereja!
+                    
+                }
             }
 
 
@@ -275,7 +286,7 @@ namespace PAC_Man_Game_WPF_MOO_ICT
             if (score == 85)
             {
                 // show game over function with the you win message
-                GameOver("You Win, you collected all of the coins");
+                GameOver("Você ganhou, atingiu a pontuação!");
             }
 
 
