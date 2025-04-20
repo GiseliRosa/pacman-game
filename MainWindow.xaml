@@ -17,6 +17,7 @@
         <Rectangle Name="redGuy" Tag="ghost" Width="30" Height="30" Fill="Red" Canvas.Left="173" Canvas.Top="29" />
         <Rectangle Name="orangeGuy" Tag="ghost" Width="30" Height="30" Fill="Orange" Canvas.Left="651" Canvas.Top="104" />
         <Rectangle Name="pinkGuy" Tag="ghost" Width="30" Height="30" Fill="Pink" Canvas.Left="173" Canvas.Top="404" />
+        <Rectangle Name="cherry" Tag="cherry" Width="30" Height="30" Fill="Red" Canvas.Left="173" Canvas.Top="404" />
 
 
         <Rectangle Tag="wall" Stroke="Aqua" StrokeThickness="3" Height="20" Width="578" Canvas.Left="142" Canvas.Top="70" />
@@ -121,7 +122,7 @@
         <Rectangle Tag="coin" Height="10" Width="10" Fill="Gold" Canvas.Left="350" Canvas.Top="544" />
         <Rectangle Tag="coin" Height="10" Width="10" Fill="Gold" Canvas.Left="350" Canvas.Top="510" />
 
-
+        <Rectangle Tag="cherry" Height="10" Width="10" Fill="Red" Canvas.Left="350" Canvas.Top="510" />
 
 
     </Canvas>
