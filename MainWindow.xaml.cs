@@ -5,10 +5,6 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
 using System.Windows.Threading;
-using System.Collections.Generic;
-using System;
-using System.Linq;
-
 namespace PAC_Man_Game_WPF_MOO_ICT
 {
     /// <summary>
@@ -83,7 +79,7 @@ namespace PAC_Man_Game_WPF_MOO_ICT
         private void GameSetUp()
         {
             MyCanvas.Focus();
-            gameTimer.Tick += GameLoop;
+            gameTimer.Tick += GameLoop!;
             gameTimer.Interval = TimeSpan.FromMilliseconds(30);
             gameTimer.Start();
 
@@ -119,7 +115,7 @@ namespace PAC_Man_Game_WPF_MOO_ICT
 
             // Configuração da cereja
             ImageBrush cherryImage = new ImageBrush();
-            cherryImage.ImageSource = new BitmapImage(new Uri("Images/pacman.jpg", UriKind.Relative));
+            cherryImage.ImageSource = new BitmapImage(new Uri("pack://application:,,,/images/cereja.jpg"));
             cherry.Fill = cherryImage;
             cherry.Visibility = Visibility.Hidden;
 
@@ -225,9 +221,10 @@ namespace PAC_Man_Game_WPF_MOO_ICT
                 {
                     cherryHitBox = hitBox;
 
-                    // Aparece após 300 ticks
-                    if (tickCounter == 300 && x.Visibility != Visibility.Visible)
+                    // Aparece após 250 ticks
+                    if (tickCounter == 250 && x.Visibility != Visibility.Visible)
                     {
+                        // TODO: checar se a cereja não tá sendo gerada dentro da parede
                         cherryCol = rand.Next(0, (int)(Application.Current.MainWindow.Width / tileSize));
                         cherryRow = rand.Next(0, (int)(Application.Current.MainWindow.Height / tileSize));
 
@@ -352,19 +349,31 @@ namespace PAC_Man_Game_WPF_MOO_ICT
         private bool CanMoveTo(Rectangle ghost, double x, double y)
         {
             Rect newPos = new Rect(x, y, ghost.Width, ghost.Height);
-
+            Rect screenWidth = new Rect(0, 0, MyCanvas.ActualWidth, MyCanvas.ActualHeight);
             foreach (var wall in MyCanvas.Children.OfType<Rectangle>())
             {
                 if ((string)wall.Tag == "wall")
                 {
                     Rect wallRect = new Rect(Canvas.GetLeft(wall), Canvas.GetTop(wall), wall.Width, wall.Height);
-                    if (newPos.IntersectsWith(wallRect))
+                    if (newPos.IntersectsWith(wallRect) || willCollide(newPos))
                     {
                         return false;
                     }
                 }
             }
             return true;
+        }
+
+        private bool willCollide(Rect newPos)
+        {
+            double screenHeig = MyCanvas.ActualHeight;
+            double screenWidth = MyCanvas.ActualWidth;
+            //Testa se a próxima posição do fantasma acrescida de 95 pixels, será maior
+            //que a borda da tela, se for, vai colidir.
+            if (newPos.X + 95 >= screenWidth || 
+                newPos.Y + 95 >= screenHeig)
+                return true;
+            return false;
         }
 
         private void DeathLogic()
@@ -404,8 +413,8 @@ namespace PAC_Man_Game_WPF_MOO_ICT
         {
             gameTimer.Stop();
             MessageBox.Show(message, "Pacman da Giseli (Adaptado)");
-            System.Diagnostics.Process.Start(System.Diagnostics.Process.GetCurrentProcess().MainModule.FileName);
-            Application.Current.Shutdown();
+            if (System.Diagnostics.Process.Start(System.Diagnostics.Process.GetCurrentProcess().MainModule!.FileName) != null)
+                Application.Current.Shutdown();
         }
     }
 }
