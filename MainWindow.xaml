@@ -120,8 +120,7 @@
         <Rectangle Tag="coin" Height="10" Width="10" Fill="Gold" Canvas.Left="318" Canvas.Top="510" />
         <Rectangle Tag="coin" Height="10" Width="10" Fill="Gold" Canvas.Left="350" Canvas.Top="544" />
         <Rectangle Tag="coin" Height="10" Width="10" Fill="Gold" Canvas.Left="350" Canvas.Top="510" />
-        <Rectangle Tag="coin" Height="10" Width="10" Fill="Gold"  HorizontalAlignment="Left" VerticalAlignment="Top" />
-        <Rectangle Tag="coin" Height="10" Width="10" Fill="Gold" HorizontalAlignment="Left" VerticalAlignment="Top" />
+        <Rectangle Tag="coin" Height="10" Width="10" Fill="Gold"  HorizontalAlignment="Center" VerticalAlignment="Top" Canvas.Left="204" Canvas.Top="543" />
 
     </Canvas>
 </Window>

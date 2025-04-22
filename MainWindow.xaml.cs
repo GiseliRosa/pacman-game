@@ -240,7 +240,7 @@ namespace PAC_Man_Game_WPF_MOO_ICT
         }
 
         /// <summary>
-        /// Faz a cereja aparecer em uma posição fixa sem verificar colisões
+        /// Faz a cereja aparecer em uma posição fixa
         /// </summary>
         private void SpawnCherryInFixedPosition()
         {
@@ -344,7 +344,10 @@ namespace PAC_Man_Game_WPF_MOO_ICT
         #endregion
 
         #region Movimentação dos Fantasmas
-
+        /*Blinky persegue diretamente.
+        Pinky tenta antecipar seu movimento.
+        Inky age como um caçador em equipe.
+        O scatter mode dá respiros estratégicos.*/
         private void MoveBlinky(Rectangle ghost)
         {
             double ghostX = Canvas.GetLeft(ghost);
@@ -367,6 +370,9 @@ namespace PAC_Man_Game_WPF_MOO_ICT
 
         private void MovePinky(Rectangle ghost)
         {
+            //Onde eu estou agora?" (ghostX/Y)
+            //Para onde vou olhar depois?"(targetX / Y)
+
             double ghostX = Canvas.GetLeft(ghost);
             double ghostY = Canvas.GetTop(ghost);
             double targetX, targetY;
@@ -381,13 +387,13 @@ namespace PAC_Man_Game_WPF_MOO_ICT
                 targetX = Canvas.GetLeft(pacman);
                 targetY = Canvas.GetTop(pacman);
 
-                if (_goRight) targetX += 4 * 32;
+                if (_goRight) targetX += 4 * 32; // 128 pixels à frente do Pac-Man, sendo 4 = Número de blocos e 32 o Tamanho em pixels de cada bloco
                 if (_goLeft) targetX -= 4 * 32;
                 if (_goUp) targetY -= 4 * 32;
                 if (_goDown) targetY += 4 * 32;
             }
 
-            MoveGhostTowardsTarget(ghost, ghostX, ghostY, targetX, targetY);
+            MoveGhostTowardsTarget(ghost, ghostX, ghostY, targetX, targetY); // faz a chamada do método passando os parâmetros
         }
 
         private void MoveInky(Rectangle ghost)
@@ -442,7 +448,9 @@ namespace PAC_Man_Game_WPF_MOO_ICT
             Canvas.SetTop(ghost, bestDirection.Y);
         }
 
-        private bool CanMoveTo(Rectangle ghost, double x, double y)
+        /*O método CanMoveTo é um verificador de colisão essencial para o movimento dos fantasmas. 
+         Ele determina se um fantasma pode se mover para uma determinada posição (x, y) sem colidir com paredes ou sair dos limites do mapa. */
+        private bool CanMoveTo(Rectangle ghost, double x, double y) // 
         {
             Rect newPos = new Rect(x, y, ghost.Width, ghost.Height);
 
