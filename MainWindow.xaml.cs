@@ -74,7 +74,8 @@ namespace PAC_Man_Game_WPF_MOO_ICT
             _gameTimer.Start(); // Inicia o loop do jogo
 
             LoadCharacterImages(); // Carrega as imagens dos personagens
-            InitializeCherry();    // Configura o sistema da cereja
+            InitializeCherry();
+            SpawnCherryInFixedPosition();
         }
 
         /// <summary>
@@ -105,35 +106,6 @@ namespace PAC_Man_Game_WPF_MOO_ICT
             {
                 ImageSource = new BitmapImage(new Uri($"pack://application:,,,/images/{imageName}"))
             };
-        }
-
-        /// <summary>
-        /// Configura a cereja e suas posições válidas
-        /// </summary>
-        
-        /* Objetivo: Garante que a cereja sempre surja em locais acessíveis, 
-          longe de paredes e espalhados pelo mapa para equilibrar a jogabilidade.*/
-        private void InitializeCherry()
-        {
-            cherry.Fill = CreateImageBrush("cereja.jpg");
-            cherry.Visibility = Visibility.Hidden;
-
-            // Posições ajustadas com margem de segurança (X, Y)
-            _validCherryPositions.Clear();
-
-            // ÁREAS SEGURAS
-            // Região Superior (Y entre 100-140)
-            _validCherryPositions.Add(new Point(200, 120));  // Esquerda
-            _validCherryPositions.Add(new Point(600, 120));  // Direita
-
-            // Região Central (Y entre 200-320)
-            _validCherryPositions.Add(new Point(350, 250));  // Centro-esquerda
-            _validCherryPositions.Add(new Point(450, 250));  // Centro-direita
-
-            // Região Inferior (Y entre 400-520)
-            _validCherryPositions.Add(new Point(200, 450));  // Esquerda
-            _validCherryPositions.Add(new Point(600, 450));  // Direita
-            _validCherryPositions.Add(new Point(400, 500));  // Centro (abaixo do retângulo central)
         }
 
         #endregion
@@ -210,40 +182,76 @@ namespace PAC_Man_Game_WPF_MOO_ICT
 
         /// <summary>
         /// Controla o aparecimento e coleta da cereja
+        /// 250 Ciclos (aproximadamente 7,5 seg) = Frames = Execuções do GameLoop
+
+        /*Quando o PAC-MAN encosta na cereja, três coisas acontecem simultaneamente: 
+        a cereja desaparece da tela,
+        o jogador ganha 15 pontos extras (um bônus considerável em relação às moedas comuns)
+        e o contador de tempo é reiniciado, preparando o sistema para fazer a cereja reaparecer após novo intervalo.*/
+        /// </summary>
+        /// <summary>
+        /// Controla o aparecimento e coleta da cereja
         /// </summary>
         private void HandleCherryLogic()
         {
-            if (cherry.Visibility == Visibility.Hidden && _tickCounter == 250)
+            // Lógica de aparecimento baseada em tempo
+            if (cherry.Visibility == Visibility.Hidden && _tickCounter >= 250)
             {
-                SpawnCherry();
-                _tickCounter = 0;
+                SpawnCherryInFixedPosition();
+                _tickCounter = 0; // é zerado para reiniciar a contagem.
             }
 
+            // Lógica de coleta
             if (cherry.Visibility == Visibility.Visible &&
-                _pacmanHitBox.IntersectsWith(new Rect(Canvas.GetLeft(cherry), Canvas.GetTop(cherry), cherry.Width, cherry.Height)))
+                _pacmanHitBox.IntersectsWith(new Rect(Canvas.GetLeft(cherry), Canvas.GetTop(cherry),
+                                            cherry.Width, cherry.Height)))
             {
                 cherry.Visibility = Visibility.Hidden;
                 _score += 15;
                 _tickCounter = 0;
             }
         }
+        /// <summary>
+        /// Configura a cereja e suas posições válidas
+        /// </summary>
+
+        /* Objetivo: Garante que a cereja sempre surja em locais acessíveis, 
+          longe de paredes e espalhados pelo mapa para equilibrar a jogabilidade.*/
+        private void InitializeCherry()
+        {
+            cherry.Fill = CreateImageBrush("cereja.jpg");
+            cherry.Visibility = Visibility.Hidden;
+
+            // Posições ajustadas com margem de segurança (X, Y)
+            _validCherryPositions.Clear();
+
+            // ÁREAS SEGURAS
+            // Região Superior (Y entre 100-140)
+            _validCherryPositions.Add(new Point(187, 277));  // Esquerda
+            _validCherryPositions.Add(new Point(600, 120));  // Direita
+
+            // Região Central (Y entre 200-320)
+            _validCherryPositions.Add(new Point(350, 250));  // Centro-esquerda
+            _validCherryPositions.Add(new Point(450, 210));  // Centro-direita
+
+            // Região Inferior (Y entre 400-520)
+            _validCherryPositions.Add(new Point(105, 487));  // Esquerda
+            _validCherryPositions.Add(new Point(768, 477));
+        }
 
         /// <summary>
-        /// Faz a cereja aparecer em uma posição válida
+        /// Faz a cereja aparecer em uma posição fixa sem verificar colisões
         /// </summary>
-        private void SpawnCherry()
+        private void SpawnCherryInFixedPosition()
         {
             if (_validCherryPositions.Count == 0) return;
 
-            // Tenta no máximo 10 posições aleatórias
-            for (int i = 0; i < 10; i++)
-            {
-                int randomIndex = _rand.Next(0, _validCherryPositions.Count);
-                Point position = _validCherryPositions[randomIndex];
-            }
+            // Seleciona uma posição aleatória da lista de posições válidas
+            var randomPosition = _validCherryPositions[_rand.Next(_validCherryPositions.Count)];
 
-            // Se não encontrar posição válida, não mostra a cereja
-            cherry.Visibility = Visibility.Hidden;
+            Canvas.SetLeft(cherry, randomPosition.X);
+            Canvas.SetTop(cherry, randomPosition.Y);
+            cherry.Visibility = Visibility.Visible;
         }
 
         #endregion
@@ -422,7 +430,7 @@ namespace PAC_Man_Game_WPF_MOO_ICT
 
             foreach (var direction in possibleDirections)
             {
-                double distance = Math.Pow(targetX - direction.X, 2) + Math.Pow(targetY - direction.Y, 2);
+                var distance = Math.Pow(targetX - direction.X, 2) + Math.Pow(targetY - direction.Y, 2);
                 if (distance < minDistance && CanMoveTo(ghost, direction.X, direction.Y))
                 {
                     minDistance = distance;
@@ -497,6 +505,9 @@ namespace PAC_Man_Game_WPF_MOO_ICT
 
         /// <summary>
         /// Reseta todos os estados de movimento
+        /*Essencialmente, esse método coloca o PAC-MAN em um estado neutro, como se estivesse parado e pronto para receber novos comandos do jogador.
+        Ele é crucial em situações como quando o personagem morre e precisa ser reposicionado, quando o jogo é reiniciado, 
+        ou em qualquer momento que exija uma parada completa e imediata do movimento.*/
         /// </summary>
         private void ResetMovement()
         {
@@ -514,7 +525,7 @@ namespace PAC_Man_Game_WPF_MOO_ICT
             switch (_life)
             {
                 case 2:
-                    lifeOne.Visibility = Visibility.Hidden;
+                    lifeOne.Visibility = Visibility.Hidden; //esconde a imagem que representa uma vida do jogador, mas mantem o o espaço que ela ocupava.
                     break;
                 case 1:
                     lifeTwo.Visibility = Visibility.Hidden;
@@ -536,40 +547,46 @@ namespace PAC_Man_Game_WPF_MOO_ICT
 
         /// <summary>
         /// Reseta a posição do PAC-MAN
-        /// </summary>
-        private void ResetPacmanPosition()
-        {
-            Canvas.SetLeft(pacman, 417);
-            Canvas.SetTop(pacman, 452);
-            ResetMovement();
-        }
+/* O método ResetPacmanPosition() tem uma função clara: reposicionar o PAC-MAN em seu local inicial no mapa quando necessário. Ele faz isso de forma direta, definindo as coordenadas fixas (X=417, Y=452) que representam a posição de spawn segura do personagem,
+ * normalmente no centro ou em uma área protegida do labirinto. Além disso, ele chama ResetMovement() para garantir que o PAC-MAN pare imediatamente 
+qualquer movimento que estivesse fazendo antes do reset, liberando também possíveis bloqueios de direção causados por colisões.
+Esse método é acionado principalmente em duas situações:
+- Quando o PAC-MAN é pego por um fantasma (perdendo uma vida)
+- Ao reiniciar o jogo ou fase*/
+/// </summary>
+private void ResetPacmanPosition()
+{
+    Canvas.SetLeft(pacman, 417);
+    Canvas.SetTop(pacman, 452);
+    ResetMovement();
+}
 
-        /// <summary>
-        /// Verifica se o jogador venceu
-        /// </summary>
-        private void CheckWinCondition()
-        {
-            if (_score >= 85)
-            {
-                GameOver("Você ganhou, atingiu a pontuação!");
-            }
-        }
-
-        /// <summary>
-        /// Exibe a tela de fim de jogo
-        /// </summary>
-        private void GameOver(string message)
-        {
-            _gameTimer.Stop();
-            MessageBox.Show(message, "Pacman da Giseli (Adaptado)");
-
-            // Reinicia o jogo
-            if (System.Diagnostics.Process.Start(System.Diagnostics.Process.GetCurrentProcess().MainModule!.FileName) != null)
-            {
-                Application.Current.Shutdown();
-            }
-        }
-
-        #endregion
+/// <summary>
+/// Verifica se o jogador venceu
+/// </summary>
+private void CheckWinCondition()
+{
+    if (_score >= 85)
+    {
+        GameOver("Você ganhou, atingiu a pontuação!");
     }
+}
+
+/// <summary>
+/// Exibe a tela de fim de jogo
+/// </summary>
+private void GameOver(string message)
+{
+    _gameTimer.Stop();
+    MessageBox.Show(message, "Pacman da Giseli (Adaptado)");
+
+    // Reinicia o jogo
+    if (System.Diagnostics.Process.Start(System.Diagnostics.Process.GetCurrentProcess().MainModule!.FileName) != null)
+    {
+        Application.Current.Shutdown();
+    }
+}
+
+#endregion
+}
 }
