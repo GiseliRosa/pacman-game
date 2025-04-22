@@ -1,263 +1,349 @@
-﻿using System.Windows;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
 using System.Windows.Threading;
+
 namespace PAC_Man_Game_WPF_MOO_ICT
 {
     /// <summary>
-    /// Interaction logic for MainWindow.xaml
+    /// Classe principal que representa a janela do jogo PAC-MAN
     /// </summary>
     public partial class MainWindow : Window
     {
-        // Variáveis de controle do jogo
-        DispatcherTimer gameTimer = new DispatcherTimer();
-        bool goLeft, goRight, goDown, goUp;
-        bool noLeft, noRight, noDown, noUp;
-        int speed = 7;
-        short life = 3;
-        Rect pacmanHitBox;
-        int ghostSpeed = 4;
-        int score = 0;
-        private Random rand = new Random();
-        int tickCounter;
+        #region Variáveis do Jogo
 
-        // Variáveis para controle dos modos dos fantasmas
-        bool scatterMode = true;
-        int modeTimer = 0;
-        const int scatterDuration = 300;
-        const int chaseDuration = 600;
+        // Temporizador principal do jogo
+        private readonly DispatcherTimer _gameTimer = new DispatcherTimer();
 
-        // Variáveis para controle das cerejas
-        private Rect cherryHitBox;
-        private int cherryCol, cherryRow;
-        private const int tileSize = 32; // Tamanho de cada célula do grid
+        // Controles de movimento do PAC-MAN
+        private bool _goLeft, _goRight, _goDown, _goUp;
+        private bool _noLeft, _noRight, _noDown, _noUp;
 
+        // Configurações gerais
+        private const int Speed = 7;          // Velocidade do PAC-MAN
+        private short _life = 3;              // Vidas restantes
+        private const int GhostSpeed = 4;     // Velocidade dos fantasmas
+        private int _score;                   // Pontuação atual
+        private readonly Random _rand = new Random();
+        private int _tickCounter;             // Contador de ticks para eventos temporizados
+
+        // Hitbox do PAC-MAN
+        private Rect _pacmanHitBox;
+
+        // Variáveis dos fantasmas
+        private bool _scatterMode = true;     // Modo dispersão/perseguição
+        private int _modeTimer;               // Contador para alternar modos
+        private const int ScatterDuration = 300; // Duração do modo dispersão
+        private const int ChaseDuration = 600;   // Duração do modo perseguição
+
+        // Variáveis da cereja
+        private Rect _cherryHitBox;
+        private const int TileSize = 32;      // Tamanho de cada célula do grid
+        private readonly List<Point> _validCherryPositions = new List<Point>(); // Posições válidas
+
+        #endregion
+
+        #region Inicialização
+
+        /// <summary>
+        /// Construtor da janela principal - Configura a janela e inicializa o jogo
+        /// </summary>
         public MainWindow()
         {
             InitializeComponent();
             GameSetUp();
         }
 
-        private void CanvasKeyDown(object sender, KeyEventArgs e)
-        {
-            if (e.Key == Key.Left && noLeft == false)
-            {
-                goRight = goUp = goDown = false;
-                noRight = noUp = noDown = false;
-                goLeft = true;
-                pacman.RenderTransform = new RotateTransform(-180, pacman.Width / 2, pacman.Height / 2);
-            }
-
-            if (e.Key == Key.Right && noRight == false)
-            {
-                noLeft = noUp = noDown = false;
-                goLeft = goUp = goDown = false;
-                goRight = true;
-                pacman.RenderTransform = new RotateTransform(0, pacman.Width / 2, pacman.Height / 2);
-            }
-
-            if (e.Key == Key.Up && noUp == false)
-            {
-                noRight = noDown = noLeft = false;
-                goRight = goDown = goLeft = false;
-                goUp = true;
-                pacman.RenderTransform = new RotateTransform(-90, pacman.Width / 2, pacman.Height / 2);
-            }
-
-            if (e.Key == Key.Down && noDown == false)
-            {
-                noUp = noLeft = noRight = false;
-                goUp = goLeft = goRight = false;
-                goDown = true;
-                pacman.RenderTransform = new RotateTransform(90, pacman.Width / 2, pacman.Height / 2);
-            }
-        }
-
+        /// <summary>
+        /// Configura o estado inicial do jogo
+        /// - Define o foco para o canvas
+        /// - Configura o timer do jogo
+        /// - Carrega os elementos visuais
+        /// </summary>
         private void GameSetUp()
         {
-            MyCanvas.Focus();
-            gameTimer.Tick += GameLoop!;
-            gameTimer.Interval = TimeSpan.FromMilliseconds(30);
-            gameTimer.Start();
+            MyCanvas.Focus(); // Permite capturar eventos de teclado
+            _gameTimer.Tick += GameLoop; // Associa o método GameLoop ao timer
+            _gameTimer.Interval = TimeSpan.FromMilliseconds(30); // ~33 FPS
+            _gameTimer.Start(); // Inicia o loop do jogo
 
-            // Configuração das imagens
-            ImageBrush pacmanImage = new ImageBrush();
-            pacmanImage.ImageSource = new BitmapImage(new Uri("pack://application:,,,/images/pacman.jpg"));
-            pacman.Fill = pacmanImage;
+            LoadCharacterImages(); // Carrega as imagens dos personagens
+            InitializeCherry();    // Configura o sistema da cereja
+        }
 
-            ImageBrush redGhost = new ImageBrush();
-            redGhost.ImageSource = new BitmapImage(new Uri("pack://application:,,,/images/red.jpg"));
-            redGuy.Fill = redGhost;
+        /// <summary>
+        /// Carrega as imagens dos personagens
+        /// </summary>
+        private void LoadCharacterImages()
+        {
+            // PAC-MAN
+            pacman.Fill = CreateImageBrush("pacman.jpg");
 
-            ImageBrush orangeGhost = new ImageBrush();
-            orangeGhost.ImageSource = new BitmapImage(new Uri("pack://application:,,,/images/orange.jpg"));
-            orangeGuy.Fill = orangeGhost;
+            // Fantasmas
+            redGuy.Fill = CreateImageBrush("red.jpg");
+            orangeGuy.Fill = CreateImageBrush("orange.jpg");
+            pinkGuy.Fill = CreateImageBrush("pink.jpg");
 
-            ImageBrush pinkGhost = new ImageBrush();
-            pinkGhost.ImageSource = new BitmapImage(new Uri("pack://application:,,,/images/pink.jpg"));
-            pinkGuy.Fill = pinkGhost;
+            // Vidas
+            lifeOne.Fill = CreateImageBrush("pacman.jpg");
+            lifeTwo.Fill = CreateImageBrush("pacman.jpg");
+            lifeThree.Fill = CreateImageBrush("pacman.jpg");
+        }
 
-            // Configuração das vidas
-            ImageBrush lifeOneImage = new ImageBrush();
-            lifeOneImage.ImageSource = new BitmapImage(new Uri("pack://application:,,,/images/pacman.jpg"));
-            lifeOne.Fill = lifeOneImage;
+        /// <summary>
+        /// Cria um pincel de imagem a partir de um arquivo
+        /// </summary>
+        private ImageBrush CreateImageBrush(string imageName)
+        {
+            return new ImageBrush
+            {
+                ImageSource = new BitmapImage(new Uri($"pack://application:,,,/images/{imageName}"))
+            };
+        }
 
-            ImageBrush lifeTwoImage = new ImageBrush();
-            lifeTwoImage.ImageSource = new BitmapImage(new Uri("pack://application:,,,/images/pacman.jpg"));
-            lifeTwo.Fill = lifeTwoImage;
-
-            ImageBrush lifeThreeImage = new ImageBrush();
-            lifeThreeImage.ImageSource = new BitmapImage(new Uri("pack://application:,,,/images/pacman.jpg"));
-            lifeThree.Fill = lifeThreeImage;
-
-            // Configuração da cereja
-            ImageBrush cherryImage = new ImageBrush();
-            cherryImage.ImageSource = new BitmapImage(new Uri("pack://application:,,,/images/cereja.jpg"));
-            cherry.Fill = cherryImage;
+        /// <summary>
+        /// Configura a cereja e suas posições válidas
+        /// </summary>
+        
+        /* Objetivo: Garante que a cereja sempre surja em locais acessíveis, 
+          longe de paredes e espalhados pelo mapa para equilibrar a jogabilidade.*/
+        private void InitializeCherry()
+        {
+            cherry.Fill = CreateImageBrush("cereja.jpg");
             cherry.Visibility = Visibility.Hidden;
 
-            // Posição inicial aleatória para a cereja
-            cherryCol = rand.Next(0, (int)(Application.Current.MainWindow.Width / tileSize));
-            cherryRow = rand.Next(0, (int)(Application.Current.MainWindow.Height / tileSize));
+            // Posições ajustadas com margem de segurança (X, Y)
+            _validCherryPositions.Clear();
+
+            // ÁREAS SEGURAS
+            // Região Superior (Y entre 100-140)
+            _validCherryPositions.Add(new Point(200, 120));  // Esquerda
+            _validCherryPositions.Add(new Point(600, 120));  // Direita
+
+            // Região Central (Y entre 200-320)
+            _validCherryPositions.Add(new Point(350, 250));  // Centro-esquerda
+            _validCherryPositions.Add(new Point(450, 250));  // Centro-direita
+
+            // Região Inferior (Y entre 400-520)
+            _validCherryPositions.Add(new Point(200, 450));  // Esquerda
+            _validCherryPositions.Add(new Point(600, 450));  // Direita
+            _validCherryPositions.Add(new Point(400, 500));  // Centro (abaixo do retângulo central)
         }
 
+        #endregion
+
+        #region Lógica Principal do Jogo
+
+        /// <summary>
+        /// Loop principal do jogo, executado a cada frame
+        /// </summary>
         private void GameLoop(object sender, EventArgs e)
         {
-            tickCounter++;
-            modeTimer++;
+            UpdateGameState();
+            HandlePacmanMovement();
+            HandleCherryLogic();
+            CheckCollisions();
+            CheckWinCondition();
+        }
 
-            // Alternar entre modos de dispersão e perseguição
-            if (scatterMode && modeTimer > scatterDuration)
+        /// <summary>
+        /// Atualiza o estado geral do jogo
+        /// </summary>
+        private void UpdateGameState()
+        {
+            _tickCounter++;
+            _modeTimer++;
+
+            // Alterna entre modos dos fantasmas
+            if (_scatterMode && _modeTimer > ScatterDuration)
             {
-                scatterMode = false;
-                modeTimer = 0;
+                _scatterMode = false;
+                _modeTimer = 0;
             }
-            else if (!scatterMode && modeTimer > chaseDuration)
+            else if (!_scatterMode && _modeTimer > ChaseDuration)
             {
-                scatterMode = true;
-                modeTimer = 0;
+                _scatterMode = true;
+                _modeTimer = 0;
             }
 
-            txtScore.Content = "Score: " + score;
+            txtScore.Content = $"Score: {_score}";
+        }
 
-            // Movimento do Pac-Man
-            if (goRight) Canvas.SetLeft(pacman, Canvas.GetLeft(pacman) + speed);
-            if (goLeft) Canvas.SetLeft(pacman, Canvas.GetLeft(pacman) - speed);
-            if (goUp) Canvas.SetTop(pacman, Canvas.GetTop(pacman) - speed);
-            if (goDown) Canvas.SetTop(pacman, Canvas.GetTop(pacman) + speed);
+        /// <summary>
+        /// Controla o movimento do PAC-MAN
+        /// </summary>
+        private void HandlePacmanMovement()
+        {
+            if (_goRight) Canvas.SetLeft(pacman, Canvas.GetLeft(pacman) + Speed);
+            if (_goLeft) Canvas.SetLeft(pacman, Canvas.GetLeft(pacman) - Speed);
+            if (_goUp) Canvas.SetTop(pacman, Canvas.GetTop(pacman) - Speed);
+            if (_goDown) Canvas.SetTop(pacman, Canvas.GetTop(pacman) + Speed);
 
-            // Limites da tela
-            if (goDown && Canvas.GetTop(pacman) + 80 > Application.Current.MainWindow.Height)
+            HandleScreenWrapping();
+            _pacmanHitBox = new Rect(Canvas.GetLeft(pacman), Canvas.GetTop(pacman), pacman.Width, pacman.Height);
+        }
+
+        /// <summary>
+        /// Implementa o efeito de "túnel" nas bordas da tela
+        /// </summary>
+        private void HandleScreenWrapping()
+        {
+            if (_goDown && Canvas.GetTop(pacman) + 80 > Application.Current.MainWindow.Height)
                 Canvas.SetTop(pacman, 0);
-            if (goUp && Canvas.GetTop(pacman) < 1)
+            if (_goUp && Canvas.GetTop(pacman) < 1)
                 Canvas.SetTop(pacman, Application.Current.MainWindow.Height);
-            if (goLeft && Canvas.GetLeft(pacman) - 10 < 1)
+            if (_goLeft && Canvas.GetLeft(pacman) - 10 < 1)
                 Canvas.SetLeft(pacman, Application.Current.MainWindow.Width);
-            if (goRight && Canvas.GetLeft(pacman) + 70 > Application.Current.MainWindow.Width)
+            if (_goRight && Canvas.GetLeft(pacman) + 70 > Application.Current.MainWindow.Width)
                 Canvas.SetLeft(pacman, 0);
+        }
 
-            pacmanHitBox = new Rect(Canvas.GetLeft(pacman), Canvas.GetTop(pacman), pacman.Width, pacman.Height);
+        #endregion
 
-            // Verificação de colisões
-            foreach (var x in MyCanvas.Children.OfType<Rectangle>())
+        #region Lógica da Cereja
+
+        /// <summary>
+        /// Controla o aparecimento e coleta da cereja
+        /// </summary>
+        private void HandleCherryLogic()
+        {
+            if (cherry.Visibility == Visibility.Hidden && _tickCounter == 250)
             {
-                Rect hitBox = new Rect(Canvas.GetLeft(x), Canvas.GetTop(x), x.Width, x.Height);
-
-                // Colisão com paredes
-                if ((string)x.Tag == "wall")
-                {
-                    if (goLeft && pacmanHitBox.IntersectsWith(hitBox))
-                    {
-                        Canvas.SetLeft(pacman, Canvas.GetLeft(pacman) + 10);
-                        noLeft = true;
-                        goLeft = false;
-                    }
-                    if (goRight && pacmanHitBox.IntersectsWith(hitBox))
-                    {
-                        Canvas.SetLeft(pacman, Canvas.GetLeft(pacman) - 10);
-                        noRight = true;
-                        goRight = false;
-                    }
-                    if (goDown && pacmanHitBox.IntersectsWith(hitBox))
-                    {
-                        Canvas.SetTop(pacman, Canvas.GetTop(pacman) - 10);
-                        noDown = true;
-                        goDown = false;
-                    }
-                    if (goUp && pacmanHitBox.IntersectsWith(hitBox))
-                    {
-                        Canvas.SetTop(pacman, Canvas.GetTop(pacman) + 10);
-                        noUp = true;
-                        goUp = false;
-                    }
-                }
-
-                // Colisão com moedas
-                if ((string)x.Tag == "coin" && pacmanHitBox.IntersectsWith(hitBox) && x.Visibility == Visibility.Visible)
-                {
-                    x.Visibility = Visibility.Hidden;
-                    score++;
-                }
-
-                // Colisão com fantasmas
-                if ((string)x.Tag == "ghost")
-                {
-                    if (pacmanHitBox.IntersectsWith(hitBox))
-                    {
-                        DeathLogic();
-                    }
-
-                    // Movimento dos fantasmas
-                    if (x.Name == "redGuy") MoveBlinky((Rectangle)x);
-                    else if (x.Name == "pinkGuy") MovePinky((Rectangle)x);
-                    else if (x.Name == "orangeGuy") MoveInky((Rectangle)x);
-                }
-
-                // Lógica da cereja
-                if (x.Name == "cherry")
-                {
-                    cherryHitBox = hitBox;
-
-                    // Aparece após 250 ticks
-                    if (tickCounter == 250 && x.Visibility != Visibility.Visible)
-                    {
-                        // TODO: checar se a cereja não tá sendo gerada dentro da parede
-                        cherryCol = rand.Next(0, (int)(Application.Current.MainWindow.Width / tileSize));
-                        cherryRow = rand.Next(0, (int)(Application.Current.MainWindow.Height / tileSize));
-
-                        Canvas.SetLeft(x, cherryCol * tileSize);
-                        Canvas.SetTop(x, cherryRow * tileSize);
-                        x.Visibility = Visibility.Visible;
-                    }
-
-                    // Colisão com a cereja
-                    if (pacmanHitBox.IntersectsWith(cherryHitBox) && x.Visibility == Visibility.Visible)
-                    {
-                        x.Visibility = Visibility.Hidden;
-                        score += 15;
-                        tickCounter = 0; // Reseta para reaparecer depois
-                    }
-                }
+                SpawnCherry();
+                _tickCounter = 0;
             }
 
-            // Vitória ao coletar todas as moedas
-            if (score == 85)
+            if (cherry.Visibility == Visibility.Visible &&
+                _pacmanHitBox.IntersectsWith(new Rect(Canvas.GetLeft(cherry), Canvas.GetTop(cherry), cherry.Width, cherry.Height)))
             {
-                GameOver("Você ganhou, atingiu a pontuação!");
+                cherry.Visibility = Visibility.Hidden;
+                _score += 15;
+                _tickCounter = 0;
             }
         }
 
-        // Métodos de movimento dos fantasmas (mantidos originais)
+        /// <summary>
+        /// Faz a cereja aparecer em uma posição válida
+        /// </summary>
+        private void SpawnCherry()
+        {
+            if (_validCherryPositions.Count == 0) return;
+
+            // Tenta no máximo 10 posições aleatórias
+            for (int i = 0; i < 10; i++)
+            {
+                int randomIndex = _rand.Next(0, _validCherryPositions.Count);
+                Point position = _validCherryPositions[randomIndex];
+            }
+
+            // Se não encontrar posição válida, não mostra a cereja
+            cherry.Visibility = Visibility.Hidden;
+        }
+
+        #endregion
+
+        #region Colisões
+
+        /// <summary>
+        /// Verifica todas as colisões do jogo
+        /// </summary>
+        private void CheckCollisions()
+        {
+            foreach (var element in MyCanvas.Children.OfType<Rectangle>())
+            {
+                Rect hitBox = new Rect(Canvas.GetLeft(element), Canvas.GetTop(element), element.Width, element.Height);
+
+                switch (element.Tag)
+                {
+                    case "wall":
+                        HandleWallCollision(element, hitBox);
+                        break;
+                    case "coin":
+                        HandleCoinCollision(element, hitBox);
+                        break;
+                    case "ghost":
+                        HandleGhostCollision(element, hitBox);
+                        break;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Trata colisões com paredes
+        /// </summary>
+        private void HandleWallCollision(Rectangle wall, Rect hitBox)
+        {
+            if (_goLeft && _pacmanHitBox.IntersectsWith(hitBox))
+            {
+                Canvas.SetLeft(pacman, Canvas.GetLeft(pacman) + 10);
+                _noLeft = true;
+                _goLeft = false;
+            }
+            if (_goRight && _pacmanHitBox.IntersectsWith(hitBox))
+            {
+                Canvas.SetLeft(pacman, Canvas.GetLeft(pacman) - 10);
+                _noRight = true;
+                _goRight = false;
+            }
+            if (_goDown && _pacmanHitBox.IntersectsWith(hitBox))
+            {
+                Canvas.SetTop(pacman, Canvas.GetTop(pacman) - 10);
+                _noDown = true;
+                _goDown = false;
+            }
+            if (_goUp && _pacmanHitBox.IntersectsWith(hitBox))
+            {
+                Canvas.SetTop(pacman, Canvas.GetTop(pacman) + 10);
+                _noUp = true;
+                _goUp = false;
+            }
+        }
+
+        /// <summary>
+        /// Trata colisões com moedas
+        /// </summary>
+        private void HandleCoinCollision(Rectangle coin, Rect hitBox)
+        {
+            if (_pacmanHitBox.IntersectsWith(hitBox) && coin.Visibility == Visibility.Visible)
+            {
+                coin.Visibility = Visibility.Hidden;
+                _score++;
+            }
+        }
+
+        /// <summary>
+        /// Trata colisões com fantasmas
+        /// </summary>
+        private void HandleGhostCollision(Rectangle ghost, Rect hitBox)
+        {
+            if (_pacmanHitBox.IntersectsWith(hitBox))
+            {
+                DeathLogic();
+            }
+
+            // Movimentação dos fantasmas
+            if (ghost.Name == "redGuy") MoveBlinky(ghost);
+            else if (ghost.Name == "pinkGuy") MovePinky(ghost);
+            else if (ghost.Name == "orangeGuy") MoveInky(ghost);
+        }
+
+        #endregion
+
+        #region Movimentação dos Fantasmas
+
         private void MoveBlinky(Rectangle ghost)
         {
             double ghostX = Canvas.GetLeft(ghost);
             double ghostY = Canvas.GetTop(ghost);
             double targetX, targetY;
 
-            if (scatterMode)
+            if (_scatterMode)
             {
                 targetX = Application.Current.MainWindow.Width;
                 targetY = 0;
@@ -277,7 +363,7 @@ namespace PAC_Man_Game_WPF_MOO_ICT
             double ghostY = Canvas.GetTop(ghost);
             double targetX, targetY;
 
-            if (scatterMode)
+            if (_scatterMode)
             {
                 targetX = 0;
                 targetY = 0;
@@ -287,10 +373,10 @@ namespace PAC_Man_Game_WPF_MOO_ICT
                 targetX = Canvas.GetLeft(pacman);
                 targetY = Canvas.GetTop(pacman);
 
-                if (goRight) targetX += 4 * 32;
-                if (goLeft) targetX -= 4 * 32;
-                if (goUp) targetY -= 4 * 32;
-                if (goDown) targetY += 4 * 32;
+                if (_goRight) targetX += 4 * 32;
+                if (_goLeft) targetX -= 4 * 32;
+                if (_goUp) targetY -= 4 * 32;
+                if (_goDown) targetY += 4 * 32;
             }
 
             MoveGhostTowardsTarget(ghost, ghostX, ghostY, targetX, targetY);
@@ -302,7 +388,7 @@ namespace PAC_Man_Game_WPF_MOO_ICT
             double ghostY = Canvas.GetTop(ghost);
             double targetX, targetY;
 
-            if (scatterMode)
+            if (_scatterMode)
             {
                 targetX = Application.Current.MainWindow.Width;
                 targetY = Application.Current.MainWindow.Height;
@@ -323,11 +409,13 @@ namespace PAC_Man_Game_WPF_MOO_ICT
 
         private void MoveGhostTowardsTarget(Rectangle ghost, double ghostX, double ghostY, double targetX, double targetY)
         {
-            List<Point> possibleDirections = new List<Point>();
-            possibleDirections.Add(new Point(ghostX + ghostSpeed, ghostY));
-            possibleDirections.Add(new Point(ghostX - ghostSpeed, ghostY));
-            possibleDirections.Add(new Point(ghostX, ghostY + ghostSpeed));
-            possibleDirections.Add(new Point(ghostX, ghostY - ghostSpeed));
+            var possibleDirections = new List<Point>
+            {
+                new Point(ghostX + GhostSpeed, ghostY),
+                new Point(ghostX - GhostSpeed, ghostY),
+                new Point(ghostX, ghostY + GhostSpeed),
+                new Point(ghostX, ghostY - GhostSpeed)
+            };
 
             Point bestDirection = possibleDirections[0];
             double minDistance = double.MaxValue;
@@ -349,13 +437,13 @@ namespace PAC_Man_Game_WPF_MOO_ICT
         private bool CanMoveTo(Rectangle ghost, double x, double y)
         {
             Rect newPos = new Rect(x, y, ghost.Width, ghost.Height);
-            Rect screenWidth = new Rect(0, 0, MyCanvas.ActualWidth, MyCanvas.ActualHeight);
+
             foreach (var wall in MyCanvas.Children.OfType<Rectangle>())
             {
                 if ((string)wall.Tag == "wall")
                 {
                     Rect wallRect = new Rect(Canvas.GetLeft(wall), Canvas.GetTop(wall), wall.Width, wall.Height);
-                    if (newPos.IntersectsWith(wallRect) || willCollide(newPos))
+                    if (newPos.IntersectsWith(wallRect) || WillCollide(newPos))
                     {
                         return false;
                     }
@@ -364,57 +452,124 @@ namespace PAC_Man_Game_WPF_MOO_ICT
             return true;
         }
 
-        private bool willCollide(Rect newPos)
+        private bool WillCollide(Rect newPos)
         {
-            double screenHeig = MyCanvas.ActualHeight;
-            double screenWidth = MyCanvas.ActualWidth;
-            //Testa se a próxima posição do fantasma acrescida de 95 pixels, será maior
-            //que a borda da tela, se for, vai colidir.
-            if (newPos.X + 95 >= screenWidth || 
-                newPos.Y + 95 >= screenHeig)
-                return true;
-            return false;
+            return newPos.X + 95 >= MyCanvas.ActualWidth ||
+                   newPos.Y + 95 >= MyCanvas.ActualHeight;
         }
 
+        #endregion
+
+        #region Controles e Lógica de Fim de Jogo
+
+        /// <summary>
+        /// Manipula os eventos de teclado
+        /// </summary>
+        private void CanvasKeyDown(object sender, KeyEventArgs e)
+        {
+            switch (e.Key)
+            {
+                case Key.Left when !_noLeft:
+                    ResetMovement();
+                    _goLeft = true;
+                    pacman.RenderTransform = new RotateTransform(-180, pacman.Width / 2, pacman.Height / 2);
+                    break;
+
+                case Key.Right when !_noRight:
+                    ResetMovement();
+                    _goRight = true;
+                    pacman.RenderTransform = new RotateTransform(0, pacman.Width / 2, pacman.Height / 2);
+                    break;
+
+                case Key.Up when !_noUp:
+                    ResetMovement();
+                    _goUp = true;
+                    pacman.RenderTransform = new RotateTransform(-90, pacman.Width / 2, pacman.Height / 2);
+                    break;
+
+                case Key.Down when !_noDown:
+                    ResetMovement();
+                    _goDown = true;
+                    pacman.RenderTransform = new RotateTransform(90, pacman.Width / 2, pacman.Height / 2);
+                    break;
+            }
+        }
+
+        /// <summary>
+        /// Reseta todos os estados de movimento
+        /// </summary>
+        private void ResetMovement()
+        {
+            _goRight = _goDown = _goUp = _goLeft = false;
+            _noLeft = _noRight = _noDown = _noUp = false;
+        }
+
+        /// <summary>
+        /// Lógica de quando o PAC-MAN é pego por um fantasma
+        /// </summary>
         private void DeathLogic()
         {
-            if (life == 3)
+            _life--;
+
+            switch (_life)
             {
-                lifeOne.Visibility = Visibility.Hidden;
-                life--;
-                ResetPacmanPosition();
+                case 2:
+                    lifeOne.Visibility = Visibility.Hidden;
+                    break;
+                case 1:
+                    lifeTwo.Visibility = Visibility.Hidden;
+                    break;
+                case 0:
+                    lifeThree.Visibility = Visibility.Hidden;
+                    break;
             }
-            else if (life == 2)
-            {
-                lifeTwo.Visibility = Visibility.Hidden;
-                life--;
-                ResetPacmanPosition();
-            }
-            else if (life == 1)
-            {
-                lifeThree.Visibility = Visibility.Hidden;
-                life--;
-                ResetPacmanPosition();
-            }
-            else
+
+            if (_life < 0)
             {
                 GameOver("O Fantasma te tocou, recomece! Aff!");
             }
+            else
+            {
+                ResetPacmanPosition();
+            }
         }
 
+        /// <summary>
+        /// Reseta a posição do PAC-MAN
+        /// </summary>
         private void ResetPacmanPosition()
         {
             Canvas.SetLeft(pacman, 417);
             Canvas.SetTop(pacman, 452);
-            goRight = goDown = goUp = goLeft = false;
+            ResetMovement();
         }
 
+        /// <summary>
+        /// Verifica se o jogador venceu
+        /// </summary>
+        private void CheckWinCondition()
+        {
+            if (_score >= 85)
+            {
+                GameOver("Você ganhou, atingiu a pontuação!");
+            }
+        }
+
+        /// <summary>
+        /// Exibe a tela de fim de jogo
+        /// </summary>
         private void GameOver(string message)
         {
-            gameTimer.Stop();
+            _gameTimer.Stop();
             MessageBox.Show(message, "Pacman da Giseli (Adaptado)");
+
+            // Reinicia o jogo
             if (System.Diagnostics.Process.Start(System.Diagnostics.Process.GetCurrentProcess().MainModule!.FileName) != null)
+            {
                 Application.Current.Shutdown();
+            }
         }
+
+        #endregion
     }
 }
